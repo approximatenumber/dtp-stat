@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/tadata-ru/dtp-stat.svg?branch=master)](https://travis-ci.org/tadata-ru/dtp-stat)
 
 # Карта ДТП
 
