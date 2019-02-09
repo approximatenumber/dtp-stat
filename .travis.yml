@@ -1,16 +1,17 @@
+language: python
+python: "3.7"
+dist: xenial
+addons:
+  postgresql: "10"
+  apt:
+    packages:
+    - postgresql-10
+    - postgresql-client-10
+
 jobs:
   include:
     - stage: test
       name: "Testing host environment"
-      language: python
-      python: "3.7"
-      dist: xenial
-      addons:
-        postgresql: "10"
-        apt:
-          packages:
-          - postgresql-10
-          - postgresql-client-10
       install:
         - pip install -r requirements.txt
         - npm install -g npx
