@@ -33,7 +33,7 @@ jobs:
         - SERVER_PID=$!
         - sleep 5
       script:
-        - curl --head localhost:8000
+        - tests/travis/simple_curl_get.sh
       after_script: kill -SIGTERM $SERVER_PID || echo "Process $SERVER_PID not running"
 
     - stage: test
@@ -49,17 +49,12 @@ jobs:
         - docker-compose run -T app sh -c 'until $(nc -w 1 db 5432); do echo "Waiting for database..."; sleep 5; done'
         - docker-compose up -d app
         # we need to wait some time for container initialization
-        - APP_RUNNING=;
-          while [[ -z $APP_RUNNING ]]; do
-            for i in $(seq 10); do
-              curl --head localhost:8000 2>/dev/null &&
-              APP_RUNNING=yes &&
-              break || echo "Waiting for app...";
-              sleep 5;
-            done;
-          done
+        - tests/travis/simple_curl_get.sh
       after_success: docker-compose stop
 env:
   global:
     - DEBUG: true
     - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
+    - APP_HOST: localhost
+    - APP_PORT: 8000
+
