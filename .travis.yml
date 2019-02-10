@@ -11,7 +11,7 @@ install:
   - pip install -r requirements.txt
   - npm install -g npx
   - npm install
-before_script:
+  # prepare database
   - sudo sed -i -e '/local.*peer/s/postgres/all/' -e 's/peer\|md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
   - sudo systemctl restart postgresql
   - sleep 1
@@ -20,11 +20,16 @@ before_script:
   - psql -c "ALTER ROLE django CREATEDB;" -U postgres
   - psql -c "GRANT ALL PRIVILEGES ON DATABASE django TO django;" -U postgres
 
+env:
+  global:
+    - DEBUG: true
+    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
+
 jobs:
   include:
 
     - stage: test
-      name: "Testing host environment"
+      name: "Testing local environment"
       env:
         - DATABASE_URL: postgres://django:django@localhost:5432/django
         - APP_HOST: localhost
@@ -64,9 +69,4 @@ jobs:
         - ./parser.py tech_data
         - ./parser.py regions
         - ./parser.py data
-
-env:
-  global:
-    - DEBUG: true
-    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
 
