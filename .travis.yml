@@ -45,6 +45,8 @@ jobs:
 
     - stage: test
       name: "Testing parser (local environment)"
+      env:
+        - DATABASE_URL: postgres://django:django@localhost:5432/django
       before_script:
         - python manage.py migrate
         - python manage.py createcachetable
