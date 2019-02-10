@@ -7,48 +7,47 @@ addons:
     packages:
     - postgresql-10
     - postgresql-client-10
-install:
-  - pip install -r requirements.txt
-  - npm install -g npx
-  - npm install
-  # prepare database
-  - sudo sed -i -e '/local.*peer/s/postgres/all/' -e 's/peer\|md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
-  - sudo systemctl restart postgresql
-  - sleep 1
-  - psql -c "CREATE DATABASE django;" -U postgres
-  - psql -c "CREATE ROLE django WITH LOGIN PASSWORD 'django';" -U postgres
-  - psql -c "ALTER ROLE django CREATEDB;" -U postgres
-  - psql -c "GRANT ALL PRIVILEGES ON DATABASE django TO django;" -U postgres
-
-env:
-  global:
-    - DEBUG: true
-    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
 
 jobs:
   include:
-
     - stage: test
       name: "Testing local environment"
+      install:
+        - pip install -r requirements.txt
+        - npm install -g npx
+        - npm install
       env:
         - DATABASE_URL: postgres://django:django@localhost:5432/django
-        - APP_HOST: localhost
-        - APP_PORT: 8000
       before_script:
+        - sudo sed -i -e '/local.*peer/s/postgres/all/' -e 's/peer\|md5/trust/g' /etc/postgresql/*/main/pg_hba.conf
+        - sudo systemctl restart postgresql
+        - sleep 1
+        - psql -c "CREATE DATABASE django;" -U postgres
+        - psql -c "CREATE ROLE django WITH LOGIN PASSWORD 'django';" -U postgres
+        - psql -c "ALTER ROLE django CREATEDB;" -U postgres
+        - psql -c "GRANT ALL PRIVILEGES ON DATABASE django TO django;" -U postgres
+        - echo "Starting server"
         - python manage.py migrate
         - python manage.py createcachetable
         - python manage.py runserver localhost:8000 &
         - SERVER_PID=$!
+        - sleep 5
       script:
         - tests/travis/simple_curl_get.sh
+      name: "Testing parser"
+      script:
+        - ./parser.py tech_data
+        - ./parser.py regions
+        - ./parser.py data
       after_script: kill -SIGTERM $SERVER_PID || echo "Process $SERVER_PID not running"
+
 
     - stage: test
       name: "Testing dockerized environment"
       env:
         - DATABASE_URL: postgres://django:django@db:5432/django
-        - APP_HOST: localhost
-        - APP_PORT: 8000
+    - APP_HOST: localhost
+    - APP_PORT: 8000
       before_script:
         - cp docker/.dockerenv.example docker/.dockerenv
         - sed -i 's/DEBUG=.*/DEBUG=true/' docker/.dockerenv
@@ -60,13 +59,8 @@ jobs:
         # we need to wait some time for container initialization
         - tests/travis/simple_curl_get.sh
       after_success: docker-compose stop
-
-    - stage: test
-      name: "Testing parser (local install)"
-      env:
-        - DATABASE_URL: postgres://django:django@localhost:5432/django
-      script:
-        - ./parser.py tech_data
-        - ./parser.py regions
-        - ./parser.py data
+env:
+  global:
+    - DEBUG: true
+    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
 
