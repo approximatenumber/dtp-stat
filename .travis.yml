@@ -8,6 +8,11 @@ addons:
     - postgresql-10
     - postgresql-client-10
 
+env:
+  global:
+    - DEBUG: true
+    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
+
 install:
   - pip install -r requirements.txt
   - npm install -g npx
@@ -27,6 +32,8 @@ jobs:
       name: "Testing local environment"
       env:
         - DATABASE_URL: postgres://django:django@localhost:5432/django
+        - APP_HOST: localhost
+        - APP_PORT: 8000
       before_script:
         - python manage.py migrate
         - python manage.py createcachetable
@@ -52,8 +59,8 @@ jobs:
       name: "Testing dockerized environment"
       env:
         - DATABASE_URL: postgres://django:django@db:5432/django
-    - APP_HOST: localhost
-    - APP_PORT: 8000
+        - APP_HOST: localhost
+        - APP_PORT: 8000
       before_script:
         - cp docker/.dockerenv.example docker/.dockerenv
         - sed -i 's/DEBUG=.*/DEBUG=true/' docker/.dockerenv
@@ -62,11 +69,4 @@ jobs:
         - docker-compose up -d db
         - docker-compose run -T app sh -c 'until $(nc -w 1 db 5432); do echo "Waiting for database..."; sleep 5; done'
         - docker-compose up -d app
-        # we need to wait some time for container initialization
         - tests/travis/simple_curl_get.sh
-      after_success: docker-compose stop
-env:
-  global:
-    - DEBUG: true
-    - SECRET_KEY: "THIS_IS_VERY_SECRET_KEY_HERE"
-
